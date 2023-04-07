@@ -1,7 +1,21 @@
+<<<<<<< HEAD
 use crate::fs::{make_pipe, open_file, OpenFlags};
 use crate::mm::{translated_byte_buffer, translated_refmut, translated_str, UserBuffer};
 use crate::task::{current_process, current_user_token};
 use alloc::sync::Arc;
+=======
+//! File and filesystem-related syscalls
+
+use crate::mm::translated_byte_buffer;
+use crate::mm::translated_str;
+use crate::mm::translated_refmut;
+use crate::task::current_user_token;
+use crate::task::current_task;
+use crate::fs::{open_file, create_hard_link, unlink_file};
+use crate::fs::OpenFlags;
+use crate::fs::Stat;
+use crate::mm::UserBuffer;
+>>>>>>> d5d24eaa (finish file dev)
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();
@@ -96,4 +110,65 @@ pub fn sys_dup(fd: usize) -> isize {
     let new_fd = inner.alloc_fd();
     inner.fd_table[new_fd] = Some(Arc::clone(inner.fd_table[fd].as_ref().unwrap()));
     new_fd as isize
+// YOUR JOB: 扩展 easy-fs 和内核以实现以下三个 syscall
+pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
+    let task = current_task().unwrap();
+    let token = current_user_token();
+    let st = translated_refmut(token, _st);
+
+    let inner = task.inner_exclusive_access();
+
+    if _fd < inner.fd_table.len() {
+        let res = inner.fd_table[_fd].clone();
+        match res {
+            None => {
+                println!("[kernel] fd = {} is None in fd_table of process = {}", _fd, task.pid.0);
+                return -1;
+            },
+            Some(node) => {
+                node.stat(st);
+                return 0;
+            }
+        }
+    }
+    else {
+        println!("[kernel] fd = {} not found in fd_table of process = {}", _fd, task.pid.0);
+        return -1;
+    }
+}
+
+pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
+    let task = current_task().unwrap();
+    let token = current_user_token();
+    let old_path = translated_str(token, _old_name);
+    let new_path = translated_str(token, _new_name);
+
+    if let Some(old_inode) = open_file(
+        old_path.as_str(),
+        OpenFlags::RDONLY
+    ) {
+        let mut flags = OpenFlags::CREATE;
+        if old_inode.is_readble() {flags = flags | OpenFlags::RDONLY;}
+        if old_inode.is_writable() {flags = flags | OpenFlags::WRONLY;}
+
+        let res_inode = create_hard_link("/", old_path.as_str(),new_path.as_str(), flags);
+        match res_inode{
+            None => return -1,
+            Some(new_node) => {
+                let mut inner = task.inner_exclusive_access();
+                let fd = inner.alloc_fd();
+                inner.fd_table[fd] = Some(new_node);
+                return fd as isize;
+            }
+        }
+    }
+    else {
+        return -1;
+    }
+}
+
+pub fn sys_unlinkat(_name: *const u8) -> isize {
+    let token = current_user_token();
+    let path = translated_str(token, _name);
+    return unlink_file("/", path.as_str());
 }

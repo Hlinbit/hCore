@@ -136,7 +136,7 @@ pub fn get_block_cache(
 
 pub fn block_cache_sync_all() {
     let manager = BLOCK_CACHE_MANAGER.lock();
-    for (_, cache) in manager.queue.iter() {
+    for (_idx, cache) in manager.queue.iter() {
         cache.lock().sync();
     }
 }

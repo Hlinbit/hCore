@@ -1,5 +1,17 @@
 use super::File;
 use crate::drivers::BLOCK_DEVICE;
+use easy_fs::{
+    EasyFileSystem,
+    Inode,
+    DiskInodeType,
+};
+use crate::drivers::BLOCK_DEVICE;
+use crate::sync::UPSafeCell;
+use alloc::sync::Arc;
+use lazy_static::*;
+use bitflags::*;
+use alloc::vec::Vec;
+use super::{File, StatMode};
 use crate::mm::UserBuffer;
 use crate::sync::UPIntrFreeCell;
 use alloc::sync::Arc;
@@ -41,6 +53,9 @@ impl OSInode {
         }
         v
     }
+
+    pub fn is_readble(&self) -> bool {return self.readable;}
+    pub fn is_writable(&self) -> bool {return self.writable;}
 }
 
 lazy_static! {
@@ -105,6 +120,52 @@ pub fn open_file(name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
     }
 }
 
+/// dir is the directory in which the file is to be created. But in hCore, there is only one dir --- ROOT.
+/// So the value of dir is always "/".
+pub fn create_hard_link(dir: &str, old_name: &str, new_name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
+    let (readable, writable) = flags.read_write();
+    if dir != "/" {
+        return None;
+    }
+    if flags.contains(OpenFlags::CREATE) {
+        if let Some(old_inode) = ROOT_INODE.find(old_name) {
+
+            ROOT_INODE.link(new_name, old_inode)
+                .map(|inode| {
+                    Arc::new(OSInode::new(
+                        readable,
+                        writable,
+                        inode,
+                    ))
+                })
+        } else {
+            return None;
+        }
+    } else {
+        return None;
+    }
+}
+
+
+/// dir is the directory in which the file is to be created. But in hCore, there is only one dir --- ROOT.
+/// So the value of dir is always "/".
+pub fn unlink_file(dir: &str, name: &str) -> isize {
+    if dir != "/" {
+        return -1;
+    }
+    if let Some(inode) = ROOT_INODE.find(name) {
+        let nlink = ROOT_INODE.unlink(&inode);
+        if nlink == 0 {
+            return ROOT_INODE.delete_dir_entry(name, inode);
+        }
+        else {
+            return nlink;
+        }
+    } else {
+        return -1;
+    }
+}
+
 impl File for OSInode {
     fn readable(&self) -> bool {
         self.readable
@@ -135,5 +196,15 @@ impl File for OSInode {
             total_write_size += write_size;
         }
         total_write_size
+    }
+
+    fn stat(&self, stat: &mut super::Stat) -> isize {
+        let inner = self.inner.exclusive_access();
+        let (ftype, nlink) = inner.inode.status();
+        let node_id = inner.inode.get_disk_node_id();
+        stat.ino = node_id as u64;
+        stat.mode = if ftype == DiskInodeType::Directory {StatMode::DIR} else {StatMode::FILE};
+        stat.nlink = nlink;
+        0
     }
 }
