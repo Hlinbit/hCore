@@ -104,6 +104,10 @@ impl File for TCP {
         NET_DEVICE.transmit(&tcp_packet.build_data());
         len
     }
+
+    fn stat(&self, stat: &mut crate::fs::Stat) -> isize {
+        0
+    }
 }
 
 impl Drop for TCP {

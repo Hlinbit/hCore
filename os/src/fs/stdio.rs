@@ -2,8 +2,6 @@ use super::File;
 use crate::drivers::chardev::CharDevice;
 use crate::drivers::chardev::UART;
 use crate::mm::UserBuffer;
-use crate::sbi::console_getchar;
-use crate::task::suspend_current_and_run_next;
 use super::Stat;
 
 pub struct Stdin;
@@ -50,7 +48,6 @@ impl File for Stdout {
         user_buf.len()
     }
     fn stat(&self, stat: &mut Stat) -> isize {
-
         0
     }
 }

@@ -1,12 +1,9 @@
-use super::File;
 use crate::drivers::BLOCK_DEVICE;
 use easy_fs::{
     EasyFileSystem,
     Inode,
     DiskInodeType,
 };
-use crate::drivers::BLOCK_DEVICE;
-use crate::sync::UPSafeCell;
 use alloc::sync::Arc;
 use lazy_static::*;
 use bitflags::*;
@@ -14,11 +11,6 @@ use alloc::vec::Vec;
 use super::{File, StatMode};
 use crate::mm::UserBuffer;
 use crate::sync::UPIntrFreeCell;
-use alloc::sync::Arc;
-use alloc::vec::Vec;
-use bitflags::*;
-use easy_fs::{EasyFileSystem, Inode};
-use lazy_static::*;
 
 pub struct OSInode {
     readable: bool,
@@ -129,7 +121,6 @@ pub fn create_hard_link(dir: &str, old_name: &str, new_name: &str, flags: OpenFl
     }
     if flags.contains(OpenFlags::CREATE) {
         if let Some(old_inode) = ROOT_INODE.find(old_name) {
-
             ROOT_INODE.link(new_name, old_inode)
                 .map(|inode| {
                     Arc::new(OSInode::new(
@@ -202,6 +193,7 @@ impl File for OSInode {
         let inner = self.inner.exclusive_access();
         let (ftype, nlink) = inner.inode.status();
         let node_id = inner.inode.get_disk_node_id();
+        //println!("[kernel] in function stat node_id = {}, nlink = {}", node_id, nlink);
         stat.ino = node_id as u64;
         stat.mode = if ftype == DiskInodeType::Directory {StatMode::DIR} else {StatMode::FILE};
         stat.nlink = nlink;

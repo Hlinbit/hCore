@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 const BLOCK_SZ: usize = 512;
+const NUM_BLOCK: usize = 64 * 2048;
 
 struct BlockFile(Mutex<File>);
 
@@ -59,11 +60,11 @@ fn easy_fs_pack() -> std::io::Result<()> {
             .write(true)
             .create(true)
             .open(format!("{}{}", target_path, "fs.img"))?;
-        f.set_len(16 * 2048 * 512).unwrap();
+        f.set_len( (BLOCK_SZ * NUM_BLOCK) as u64).unwrap();
         f
     })));
     // 16MiB, at most 4095 files
-    let efs = EasyFileSystem::create(block_file, 16 * 2048, 1);
+    let efs = EasyFileSystem::create(block_file, NUM_BLOCK as u32, 1);
     let root_inode = Arc::new(EasyFileSystem::root_inode(&efs));
     let apps: Vec<_> = read_dir(src_path)
         .unwrap()

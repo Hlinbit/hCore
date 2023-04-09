@@ -7,8 +7,6 @@ use super::{
     SuperBlock,
 };
 use crate::BLOCK_SZ;
-use alloc::sync::Arc;
-use spin::Mutex;
 
 pub struct EasyFileSystem {
     pub block_device: Arc<dyn BlockDevice>,

@@ -20,4 +20,3 @@ pub use efs::EasyFileSystem;
 pub use vfs::Inode;
 pub use layout::DiskInodeType;
 use layout::*;
-pub use vfs::Inode;

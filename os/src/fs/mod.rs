@@ -13,6 +13,7 @@ pub trait File: Send + Sync {
 }
 
 pub use inode::{list_apps, open_file, OSInode, OpenFlags, ROOT_INODE};
+pub use inode::{create_hard_link, unlink_file};
 pub use pipe::{make_pipe, Pipe};
 pub use stdio::{Stdin, Stdout};
 /// The stat of a inode
@@ -42,6 +43,3 @@ bitflags! {
         const FILE  = 0o100000;
     }
 }
-
-pub use stdio::{Stdin, Stdout};
-pub use inode::{OSInode, open_file, OpenFlags, list_apps, create_hard_link, unlink_file};

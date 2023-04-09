@@ -1,21 +1,7 @@
-<<<<<<< HEAD
-use crate::fs::{make_pipe, open_file, OpenFlags};
+use crate::fs::{make_pipe, open_file, OpenFlags, create_hard_link, unlink_file, Stat};
 use crate::mm::{translated_byte_buffer, translated_refmut, translated_str, UserBuffer};
-use crate::task::{current_process, current_user_token};
+use crate::task::{current_process, current_user_token, current_task};
 use alloc::sync::Arc;
-=======
-//! File and filesystem-related syscalls
-
-use crate::mm::translated_byte_buffer;
-use crate::mm::translated_str;
-use crate::mm::translated_refmut;
-use crate::task::current_user_token;
-use crate::task::current_task;
-use crate::fs::{open_file, create_hard_link, unlink_file};
-use crate::fs::OpenFlags;
-use crate::fs::Stat;
-use crate::mm::UserBuffer;
->>>>>>> d5d24eaa (finish file dev)
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();
@@ -110,9 +96,10 @@ pub fn sys_dup(fd: usize) -> isize {
     let new_fd = inner.alloc_fd();
     inner.fd_table[new_fd] = Some(Arc::clone(inner.fd_table[fd].as_ref().unwrap()));
     new_fd as isize
+}
 // YOUR JOB: 扩展 easy-fs 和内核以实现以下三个 syscall
 pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
-    let task = current_task().unwrap();
+    let task = current_process();
     let token = current_user_token();
     let st = translated_refmut(token, _st);
 
@@ -126,6 +113,7 @@ pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
                 return -1;
             },
             Some(node) => {
+                //println!("[kernel] fd = {} is valid in fd_table of process = {}", _fd, task.pid.0);
                 node.stat(st);
                 return 0;
             }
@@ -138,7 +126,7 @@ pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
 }
 
 pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
-    let task = current_task().unwrap();
+    let process = current_process();
     let token = current_user_token();
     let old_path = translated_str(token, _old_name);
     let new_path = translated_str(token, _new_name);
@@ -152,11 +140,13 @@ pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
         if old_inode.is_writable() {flags = flags | OpenFlags::WRONLY;}
 
         let res_inode = create_hard_link("/", old_path.as_str(),new_path.as_str(), flags);
+        //println!("[kernel] create hard link finished, old_path = {}, new_path = {}", old_path.as_str(), new_path.as_str());
         match res_inode{
             None => return -1,
             Some(new_node) => {
-                let mut inner = task.inner_exclusive_access();
+                let mut inner = process.inner_exclusive_access();
                 let fd = inner.alloc_fd();
+                //println!("[kernel] create hard link success, fd = {}", fd);
                 inner.fd_table[fd] = Some(new_node);
                 return fd as isize;
             }

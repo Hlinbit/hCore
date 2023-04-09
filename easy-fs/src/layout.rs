@@ -4,13 +4,9 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter, Result};
 
 const EFS_MAGIC: u32 = 0x3b800001;
-<<<<<<< HEAD
-const INODE_DIRECT_COUNT: usize = 28;
-=======
 /// The max number of direct inodes
 const INODE_DIRECT_COUNT: usize = 27;
 /// The max length of inode name
->>>>>>> d5d24eaa (finish file dev)
 const NAME_LENGTH_LIMIT: usize = 27;
 const INODE_INDIRECT1_COUNT: usize = BLOCK_SZ / 4;
 const INODE_INDIRECT2_COUNT: usize = INODE_INDIRECT1_COUNT * INODE_INDIRECT1_COUNT;
@@ -152,8 +148,6 @@ impl DiskInode {
                 })
         }
     }
-<<<<<<< HEAD
-=======
 
     pub fn add_link(&mut self) {
         self.nlink += 1;
@@ -199,7 +193,6 @@ impl DiskInode {
     }
 
     /// Inncrease the size of current disk inode
->>>>>>> d5d24eaa (finish file dev)
     pub fn increase_size(
         &mut self,
         new_size: u32,
@@ -262,7 +255,6 @@ impl DiskInode {
         let a1 = total_blocks as usize / INODE_INDIRECT1_COUNT;
         let b1 = total_blocks as usize % INODE_INDIRECT1_COUNT;
         // alloc low-level indirect1
-<<<<<<< HEAD
         get_block_cache(self.indirect2 as usize, Arc::clone(block_device))
             .lock()
             .modify(0, |indirect2: &mut IndirectBlock| {
@@ -284,43 +276,6 @@ impl DiskInode {
                     }
                 }
             });
-=======
-        get_block_cache(
-            self.indirect2 as usize,
-            Arc::clone(block_device)
-        )
-        .lock()
-        .modify(0, |indirect2: &mut IndirectBlock| {
-            while (a0 < a1) || (a0 == a1 && b0 < b1) {
-                if b0 == 0 {
-                    let val = new_blocks.next().unwrap();
-                    if val == 0 {
-                        panic!("allocate zero");
-                    }
-                    indirect2[a0] = val;
-                }
-                // fill current
-                get_block_cache(
-                    indirect2[a0] as usize,
-                    Arc::clone(block_device)
-                )
-                .lock()
-                .modify(0, |indirect1: &mut IndirectBlock| {
-                    let val = new_blocks.next().unwrap();
-                    if val == 0 {
-                        panic!("allocate zero");
-                    }
-                    indirect1[b0] = val;
-                });
-                // move to next
-                b0 += 1;
-                if b0 == INODE_INDIRECT1_COUNT {
-                    b0 = 0;
-                    a0 += 1;
-                }
-            }
-        });
->>>>>>> d5d24eaa (finish file dev)
     }
 
     /// Clear size to zero and return blocks that should be deallocated.
@@ -352,7 +307,6 @@ impl DiskInode {
             return v;
         }
         // indirect1
-<<<<<<< HEAD
         get_block_cache(self.indirect1 as usize, Arc::clone(block_device))
             .lock()
             .modify(0, |indirect1: &mut IndirectBlock| {
@@ -362,23 +316,6 @@ impl DiskInode {
                     current_blocks += 1;
                 }
             });
-=======
-        get_block_cache(
-            self.indirect1 as usize,
-            Arc::clone(block_device),
-        )
-        .lock()
-        .modify(0, |indirect1: &mut IndirectBlock| {
-            while current_blocks < data_blocks.min(INODE_INDIRECT1_COUNT) {
-                v.push(indirect1[current_blocks]);
-                if indirect1[current_blocks] == 0 {
-                    log::debug!("indirect1, current_blocks={}", current_blocks);
-                }
-                //indirect1[current_blocks] = 0;
-                current_blocks += 1;
-            }
-        });
->>>>>>> d5d24eaa (finish file dev)
         self.indirect1 = 0;
         // indirect2 block
         if data_blocks > INODE_INDIRECT1_COUNT {
@@ -394,7 +331,6 @@ impl DiskInode {
         assert!(data_blocks <= INODE_INDIRECT2_COUNT);
         let a1 = data_blocks / INODE_INDIRECT1_COUNT;
         let b1 = data_blocks % INODE_INDIRECT1_COUNT;
-<<<<<<< HEAD
         get_block_cache(self.indirect2 as usize, Arc::clone(block_device))
             .lock()
             .modify(0, |indirect2: &mut IndirectBlock| {
@@ -422,59 +358,6 @@ impl DiskInode {
                     //indirect2[a1] = 0;
                 }
             });
-=======
-        get_block_cache(
-            self.indirect2 as usize,
-            Arc::clone(block_device),
-        )
-        .lock()
-        .modify(0, |indirect2: &mut IndirectBlock| {
-            // full indirect1 blocks
-            for i in 0..a1 {
-                v.push(indirect2[i]);
-                if indirect2[i] == 0 {
-                    log::debug!("indirect2, a1, i={}", indirect2[i]);
-                }
-                get_block_cache(
-                    indirect2[i] as usize,
-                    Arc::clone(block_device),
-                )
-                .lock()
-                .modify(0, |indirect1: &mut IndirectBlock| {
-                    for j in 0..INODE_INDIRECT1_COUNT {
-                        v.push(indirect1[j]);
-                        if indirect1[j] == 0 {
-                            log::debug!("indirect2, a1, j={}", j);
-                        }
-                        //indirect1[j] = 0;
-                    }
-                });
-                //indirect2[i] = 0;
-            }
-            // last indirect1 block
-            if b1 > 0 {
-                v.push(indirect2[a1]);
-                if indirect2[a1] == 0 {
-                    log::debug!("indirect2, b1, a1={}", a1);
-                }
-                get_block_cache(
-                    indirect2[a1] as usize,
-                    Arc::clone(block_device),
-                )
-                .lock()
-                .modify(0, |indirect1: &mut IndirectBlock| {
-                    for j in 0..b1 {
-                        v.push(indirect1[j]);
-                        if indirect1[j] == 0 {
-                            log::debug!("indirect2, b1, j={}", j);
-                        }
-                        //indirect1[j] = 0;
-                    }
-                });
-                //indirect2[a1] = 0;
-            }
-        });
->>>>>>> d5d24eaa (finish file dev)
         self.indirect2 = 0;
         v
     }

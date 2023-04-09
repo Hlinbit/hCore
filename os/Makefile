@@ -1,10 +1,11 @@
 # Building
 TARGET := riscv64gc-unknown-none-elf
 MODE := release
+FILE_MODE := release
 KERNEL_ELF := target/$(TARGET)/$(MODE)/os
 KERNEL_BIN := $(KERNEL_ELF).bin
 DISASM_TMP := target/$(TARGET)/$(MODE)/asm
-FS_IMG := ../user/target/$(TARGET)/$(MODE)/fs.img
+FS_IMG := ../user/target/$(TARGET)/$(FILE_MODE)/fs.img
 APPS := ../user/src/bin/*
 
 # BOARD
@@ -50,7 +51,7 @@ $(KERNEL_BIN): kernel
 fs-img: $(APPS)
 	@cd ../user && make build TEST=$(TEST)
 	@rm -f $(FS_IMG)
-	@cd ../easy-fs-fuse && cargo run --release -- -s ../user/src/bin/ -t ../user/target/riscv64gc-unknown-none-elf/release/
+	@cd ../easy-fs-fuse && cargo run --release -- -s ../user/src/bin/ -t ../user/target/riscv64gc-unknown-none-elf/$(FILE_MODE)/
 
 $(APPS):
 
@@ -84,6 +85,23 @@ QEMU_ARGS := -machine virt \
 			 -device virtio-mouse-device \
 			 -device virtio-net-device,netdev=net0 \
 			 -netdev user,id=net0,hostfwd=udp::6200-:2000,hostfwd=tcp::6201-:80
+
+dbg: build
+	@qemu-system-riscv64 \
+		-M 128m \
+		-machine virt \
+		-bios $(BOOTLOADER) \
+		$(GUI_OPTION) \
+		-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA) \
+		-drive file=$(FS_IMG),if=none,format=raw,id=x0 \
+        -device virtio-blk-device,drive=x0 \
+		-device virtio-gpu-device  \
+		-device virtio-keyboard-device  \
+		-device virtio-mouse-device \
+		-device virtio-net-device,netdev=net0 \
+		-netdev user,id=net0,hostfwd=udp::6200-:2000 \
+		-serial stdio \
+		-s -S
 
 fdt:
 	@qemu-system-riscv64 -M 128m -machine virt,dumpdtb=virt.out

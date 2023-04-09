@@ -138,4 +138,8 @@ impl File for PortFd {
     fn write(&self, _buf: crate::mm::UserBuffer) -> usize {
         0
     }
+
+    fn stat(&self, stat: &mut crate::fs::Stat) -> isize {
+        0
+    }
 }
