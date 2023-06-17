@@ -21,6 +21,7 @@ pub struct ProcessControlBlock {
 
 pub struct ProcessControlBlockInner {
     pub is_zombie: bool,
+    pub enable_deadlock: bool,
     pub memory_set: MemorySet,
     pub parent: Option<Weak<ProcessControlBlock>>,
     pub children: Vec<Arc<ProcessControlBlock>>,
@@ -81,6 +82,7 @@ impl ProcessControlBlock {
             inner: unsafe {
                 UPIntrFreeCell::new(ProcessControlBlockInner {
                     is_zombie: false,
+                    enable_deadlock: false,
                     memory_set,
                     parent: None,
                     children: Vec::new(),
@@ -207,6 +209,7 @@ impl ProcessControlBlock {
             inner: unsafe {
                 UPIntrFreeCell::new(ProcessControlBlockInner {
                     is_zombie: false,
+                    enable_deadlock: false,
                     memory_set,
                     parent: Some(Arc::downgrade(self)),
                     children: Vec::new(),

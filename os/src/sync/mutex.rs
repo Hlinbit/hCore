@@ -1,4 +1,6 @@
 use super::UPIntrFreeCell;
+use super::CheckDeadlock;
+use crate::syscall::process;
 use crate::task::TaskControlBlock;
 use crate::task::{block_current_and_run_next, suspend_current_and_run_next};
 use crate::task::{current_task, wakeup_task};
@@ -86,3 +88,38 @@ impl Mutex for MutexBlocking {
         }
     }
 }
+
+impl CheckDeadlock for MutexSpin {
+    fn check_deadlock(&self, request: isize) -> bool {
+
+        if request == 0 {
+            return false;
+        }
+
+        let inner = self.locked.exclusive_access();
+        if *inner == false {
+            return false;
+        }
+        else {
+            true
+        }
+    }
+}
+
+impl CheckDeadlock for MutexBlocking {
+    fn check_deadlock(&self, request: isize) -> bool {
+
+        if request == 0 {
+            return false;
+        }
+
+        let inner = self.inner.exclusive_access();
+        if inner.locked == false {
+            false
+        }
+        else {
+           true
+        }
+    }
+}
+

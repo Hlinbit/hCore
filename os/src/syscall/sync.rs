@@ -132,3 +132,12 @@ pub fn sys_condvar_wait(condvar_id: usize, mutex_id: usize) -> isize {
     condvar.wait_with_mutex(mutex);
     0
 }
+
+// Implement deadlock detection, but might not all in this syscall
+pub fn sys_enable_deadlock_detect(_enabled: usize) -> isize {
+    let process = current_process();
+    let mut inner = process.inner_exclusive_access();
+    
+    inner.enable_deadlock =_enabled != 0;
+    0
+}
