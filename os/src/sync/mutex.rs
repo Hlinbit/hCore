@@ -1,6 +1,6 @@
 use super::UPIntrFreeCell;
 use super::CheckDeadlock;
-use crate::syscall::process;
+//use crate::syscall::process;
 use crate::task::TaskControlBlock;
 use crate::task::{block_current_and_run_next, suspend_current_and_run_next};
 use crate::task::{current_task, wakeup_task};

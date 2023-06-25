@@ -1,10 +1,10 @@
 # Building
 TARGET := riscv64gc-unknown-none-elf
-MODE := release
+MODE := debug
 KERNEL_ELF := target/$(TARGET)/$(MODE)/os
 KERNEL_BIN := $(KERNEL_ELF).bin
 DISASM_TMP := target/$(TARGET)/$(MODE)/asm
-FS_IMG := ../user/target/$(TARGET)/$(MODE)/fs.img
+FS_IMG := ../user/target/$(TARGET)/release/fs.img
 APPS := ../user/src/bin/*
 
 # BOARD
@@ -55,11 +55,13 @@ fs-img: $(APPS)
 $(APPS):
 
 kernel:
+	@make clean
 	@echo Platform: $(BOARD)
 	@cp src/linker-$(BOARD).ld src/linker.ld
-	@rm src/linker.ld
-	@make -C ../user build TEST=$(TEST) CHAPTER=$(CHAPTER) BASE=$(BASE)
+	@make -C ../user clean
+	@make -C ../user build 
 	@cargo build
+	@rm src/linker.ld
 
 clean:
 	@cargo clean
@@ -104,6 +106,6 @@ gdbserver: build
 	@qemu-system-riscv64 $(QEMU_ARGS) -s -S
 
 gdbclient:
-	@riscv64-unknown-elf-gdb -ex 'file $(KERNEL_ELF)' -ex 'set arch riscv:rv64' -ex 'target remote localhost:1234'
+	@riscv64-unknown-elf-gdb -tui -ex 'file $(KERNEL_ELF)' -ex 'set arch riscv:rv64' -ex 'target remote localhost:1234'
 
 .PHONY: build env kernel clean disasm disasm-vim run-inner fs-img gdbserver gdbclient fdt

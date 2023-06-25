@@ -32,6 +32,7 @@ const SYSCALL_FRAMEBUFFER: usize = 2000;
 const SYSCALL_FRAMEBUFFER_FLUSH: usize = 2001;
 const SYSCALL_EVENT_GET: usize = 3000;
 const SYSCALL_KEY_PRESSED: usize = 3001;
+const SYSCALL_ENABLE_DEADLOCK_DETECT: usize = 469;
 
 fn syscall(id: usize, args: [usize; 3]) -> isize {
     let mut ret: isize;
@@ -160,6 +161,10 @@ pub fn sys_semaphore_create(res_count: usize) -> isize {
 
 pub fn sys_semaphore_up(sem_id: usize) -> isize {
     syscall(SYSCALL_SEMAPHORE_UP, [sem_id, 0, 0])
+}
+
+pub fn sys_enable_deadlock_detect(enabled: usize) -> isize {
+    syscall(SYSCALL_ENABLE_DEADLOCK_DETECT, [enabled, 0, 0])
 }
 
 pub fn sys_semaphore_down(sem_id: usize) -> isize {

@@ -1,4 +1,4 @@
-use crate::sync::{Condvar, Mutex, MutexBlocking, MutexSpin, Semaphore};
+use crate::sync::{Condvar, Mutex, MutexBlocking, MutexSpin, Semaphore, CheckDeadlock};
 use crate::task::{block_current_and_run_next, current_process, current_task};
 use crate::timer::{add_timer, get_time_ms};
 use alloc::sync::Arc;
@@ -84,10 +84,14 @@ pub fn sys_semaphore_up(sem_id: usize) -> isize {
     0
 }
 
+// Return -0xDEAD if deadlock is detected
 pub fn sys_semaphore_down(sem_id: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner_exclusive_access();
     let sem = Arc::clone(process_inner.semaphore_list[sem_id].as_ref().unwrap());
+    if sem.check_deadlock(1) && process_inner.enable_deadlock {
+        return -0xDEAD;
+    }
     drop(process_inner);
     sem.down();
     0
