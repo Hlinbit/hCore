@@ -1,10 +1,10 @@
 # Building
 TARGET := riscv64gc-unknown-none-elf
-MODE := debug
+MODE := release
 KERNEL_ELF := target/$(TARGET)/$(MODE)/os
 KERNEL_BIN := $(KERNEL_ELF).bin
 DISASM_TMP := target/$(TARGET)/$(MODE)/asm
-FS_IMG := ../user/target/$(TARGET)/release/fs.img
+FS_IMG := ../user/target/$(TARGET)/$(MODE)/fs.img
 APPS := ../user/src/bin/*
 
 # BOARD
@@ -60,7 +60,7 @@ kernel:
 	@cp src/linker-$(BOARD).ld src/linker.ld
 	@make -C ../user clean
 	@make -C ../user build 
-	@cargo build
+	@cargo build --release
 	@rm src/linker.ld
 
 clean:
