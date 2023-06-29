@@ -27,6 +27,7 @@ mod syscall;
 mod task;
 mod timer;
 mod trap;
+mod logging;
 
 use crate::drivers::chardev::CharDevice;
 use crate::drivers::chardev::UART;
@@ -64,6 +65,7 @@ pub fn rust_main() -> ! {
     println!("KERN: init mouse");
     let _mouse = MOUSE_DEVICE.clone();
     println!("KERN: init trap");
+    logging::init();
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();

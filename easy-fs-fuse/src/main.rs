@@ -1,3 +1,8 @@
+extern crate log;
+mod logging;
+
+use log::*;
+
 use clap::{App, Arg};
 use easy_fs::{BlockDevice, EasyFileSystem};
 use std::fs::{read_dir, File, OpenOptions};
@@ -31,10 +36,15 @@ impl BlockDevice for BlockFile {
 }
 
 fn main() {
+    logging::init();
     easy_fs_pack().expect("Error when packing easy-fs!");
 }
 
 fn easy_fs_pack() -> std::io::Result<()> {
+    warn!("why no log?");
+    info!("why no log?");
+    error!("why no log?");
+    println!("why no log?");
     let matches = App::new("EasyFileSystem packer")
         .arg(
             Arg::with_name("source")
